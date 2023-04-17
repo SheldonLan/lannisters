@@ -27,7 +27,7 @@ async def on_member_join(member: Member):
 # Правила
 @bot.slash_command(guild_ids=[guild_lannisters], description="[1-level] Правила")
 @application_checks.has_any_role('1-level')
-async def rules(interaction: Interaction):
+async def правила(interaction: Interaction):
     await interaction.send("**Привет всем!** 😱\nЯ Ваш персональный помощник по всем вопросам.\n\n"
                            "Первое с чем **нужно** ознакомиться - это правила. Уверяю, их немного.\n"
                            "```1. Всё что происходит в этом дискорде - остаётся в этом дискорде\n"
@@ -68,10 +68,10 @@ async def контракт(
         description=f"{contract_name} взятый ранее {interaction.user.name} откатился!",
         colour=nextcord.Colour.dark_blue()
     )
+
     couldown = ((servertime + datetime.timedelta(seconds=26)) - servertime).total_seconds()
     await asyncio.sleep(couldown)
     await interaction.send(content="<@&1097373637381726368>", embed=contractTimeoutEmbed, ephemeral=False)
-
 
 
 
