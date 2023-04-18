@@ -92,7 +92,7 @@ async def контракт(
 
 # шутка
 @bot.slash_command(guild_ids=[guild_lannisters], description="[2-level] Получение рандомной шутки")
-@application_checks.has_any_role('2-level')
+@application_checks.has_any_role('2-level', '3-level', '1-level', 'DSM')
 async def шутка(interaction: Interaction):
     response = requests.get('https://v2.jokeapi.dev/joke/Any')
     jokeJson = json.loads(response.text)
@@ -112,7 +112,7 @@ async def очистить(interaction: Interaction,
                    amount: int = SlashOption(description="Сколько сообщений выше удалить?", required=True)):
     await bot.get_channel(interaction.channel_id).purge(limit=amount)
     await interaction.send(f"Пользователь <@{interaction.user.id}> удалил {amount} сообщений")
-    time.sleep(5)
+    time.sleep(2)
     await bot.get_channel(interaction.channel_id).purge(limit=1)
 
 
