@@ -1,14 +1,15 @@
-import asyncio
 import time
-
 import nextcord
-from nextcord import *
-from nextcord.ext import commands, application_checks
 import datetime
 import json
 import requests
+
+
+from nextcord import *
+from nextcord.ui import Button, View
+from nextcord.ext import commands, application_checks
 from translate import Translator
-from bs4 import BeautifulSoup
+
 
 import secret
 
@@ -22,9 +23,11 @@ bot = commands.Bot(intents=nextcord.Intents.all())
 @bot.event
 async def on_member_join(member: Member):
     welcomeChannel = bot.get_channel(1097370868897816626)
-    embed = Embed(description=f"**Добро пожаловать {member.mention}!**")
+    embed = Embed(title="Добро пожаловать!", description=f"**Рады приветствовать тебя, {member.mention}!\nНадеюсь, тебе понравится здесь.**")
+    embed.set_image("https://cdn-longterm.mee6.xyz/plugins/commands/images/762281010648842261/08734025084d41c21139210c8256695bfe62f6647349672c3bc194814f0cecda.gif")
     embed.set_footer(text="Lannister's FAMQ")
-
+    role = nextcord.utils.get(member.guild.roles, name="4-level")
+    await member.add_roles(role)
     await welcomeChannel.send(embed=embed)
 
 
@@ -59,78 +62,84 @@ async def контракт(
                                          required=True,
                                          choices=choices)):
 
+    contractCompleted = Button(label="Контракт выполнен!", style=ButtonStyle.green)
+    compledView = View()
+    compledView.add_item(contractCompleted)
+
+
     contractStartEmbed = Embed(
         title=f"Внимание!",
         description=f"<@{interaction.user.id}> взял контракт {contract_name}.",
         colour=nextcord.Colour.dark_gold())
-
     contractStartEmbed.set_footer(text=f"Время взятия: {servertime.strftime('%d.%m.%Y %H:%M:%S')}")
 
-    await interaction.send(embed=contractStartEmbed, ephemeral=False)
+    await interaction.send(embed=contractStartEmbed, ephemeral=False, view=compledView)
+
+
 
     # Таумаут контрактов
-    if contract_name == 'Большой улов (рыбка)':
-        contractTimeoutEmbed = Embed(
-            title=f"Контракт откатился!",
-            description=f"{contract_name} взятый ранее {interaction.user.name} откатился!",
-            colour=nextcord.Colour.dark_blue()
-        )
-
-        couldown = ((servertime + datetime.timedelta(seconds=5)) - servertime).total_seconds()
-        await asyncio.sleep(couldown)
-        await interaction.send(content="<@&1097373637381726368>", embed=contractTimeoutEmbed, ephemeral=False)
-    elif contract_name == 'Большой улов (рыбка)':
-        contractTimeoutEmbed = Embed(
-            title=f"Контракт откатился!",
-            description=f"{contract_name} взятый ранее {interaction.user.name} откатился!",
-            colour=nextcord.Colour.dark_blue()
-        )
-
-        couldown = ((servertime + datetime.timedelta(seconds=5)) - servertime).total_seconds()
-        await asyncio.sleep(couldown)
-        await interaction.send(content="<@&1097373637381726368>", embed=contractTimeoutEmbed, ephemeral=False)
-    elif contract_name == 'Грандиозная уборка (мусор)':
-        contractTimeoutEmbed = Embed(
-            title=f"Контракт откатился!",
-            description=f"{contract_name} взятый ранее {interaction.user.name} откатился!",
-            colour=nextcord.Colour.dark_blue()
-        )
-
-        couldown = ((servertime + datetime.timedelta(seconds=5)) - servertime).total_seconds()
-        await asyncio.sleep(couldown)
-        await interaction.send(content="<@&1097373637381726368>", embed=contractTimeoutEmbed, ephemeral=False)
-    elif contract_name == 'Мясной день (мясо)':
-        contractTimeoutEmbed = Embed(
-            title=f"Контракт откатился!",
-            description=f"{contract_name} взятый ранее {interaction.user.name} откатился!",
-            colour=nextcord.Colour.dark_blue()
-        )
-
-        couldown = ((servertime + datetime.timedelta(seconds=5)) - servertime).total_seconds()
-        await asyncio.sleep(couldown)
-        await interaction.send(content="<@&1097373637381726368>", embed=contractTimeoutEmbed, ephemeral=False)
-    elif contract_name == "Долгожданная встреча (схемы)":
-        contractTimeoutEmbed = Embed(
-            title=f"Контракт откатился!",
-            description=f"{contract_name} взятый ранее {interaction.user.name} откатился!",
-            colour=nextcord.Colour.dark_blue()
-        )
-
-        couldown = ((servertime + datetime.timedelta(seconds=5)) - servertime).total_seconds()
-        await asyncio.sleep(couldown)
-        await interaction.send(content="<@&1097373637381726368>", embed=contractTimeoutEmbed, ephemeral=False)
-    elif contract_name == "Ломать - не строить":
-        contractTimeoutEmbed = Embed(
-            title=f"Контракт откатился!",
-            description=f"{contract_name} взятый ранее {interaction.user.name} откатился!",
-            colour=nextcord.Colour.dark_blue()
-        )
-
-        couldown = ((servertime + datetime.timedelta(seconds=5)) - servertime).total_seconds()
-        await asyncio.sleep(couldown)
-        await interaction.send(content="<@&1097373637381726368>", embed=contractTimeoutEmbed, ephemeral=False)
-    else:
-        await interaction.send("Не попал в if")
+    # if contract_name == 'Большой улов (рыбка)':
+    #     contractTimeoutEmbed = Embed(
+    #         title=f"Контракт откатился!",
+    #         description=f"{contract_name} взятый ранее {interaction.user.name} откатился!",
+    #         colour=nextcord.Colour.dark_blue()
+    #     )
+    #
+    #     couldown = ((servertime + datetime.timedelta(seconds=5)) - servertime).total_seconds()
+    #     await asyncio.sleep(couldown)
+    #     await interaction.send(content="<@&1097373637381726368>", embed=contractTimeoutEmbed, ephemeral=False)
+    # elif contract_name == 'Большой улов (рыбка)':
+    #     contractTimeoutEmbed = Embed(
+    #         title=f"Контракт откатился!",
+    #         description=f"{contract_name} взятый ранее {interaction.user.name} откатился!",
+    #         colour=nextcord.Colour.dark_blue()
+    #     )
+    #
+    #     couldown = ((servertime + datetime.timedelta(seconds=5)) - servertime).total_seconds()
+    #     await asyncio.sleep(couldown)
+    #     await interaction.send(content="<@&1097373637381726368>", embed=contractTimeoutEmbed, ephemeral=False)
+    # elif contract_name == 'Грандиозная уборка (мусор)':
+    #     contractTimeoutEmbed = Embed(
+    #         title=f"Контракт откатился!",
+    #         description=f"{contract_name} взятый ранее {interaction.user.name} откатился!",
+    #         colour=nextcord.Colour.dark_blue()
+    #     )
+    #
+    #     couldown = ((servertime + datetime.timedelta(seconds=5)) - servertime).total_seconds()
+    #     await asyncio.sleep(couldown)
+    #     await interaction.send(content="<@&1097373637381726368>", embed=contractTimeoutEmbed, ephemeral=False)
+    # elif contract_name == 'Мясной день (мясо)':
+    #     contractTimeoutEmbed = Embed(
+    #         title=f"Контракт откатился!",
+    #         description=f"{contract_name} взятый ранее {interaction.user.name} откатился!",
+    #         colour=nextcord.Colour.dark_blue()
+    #     )
+    #
+    #     couldown = ((servertime + datetime.timedelta(seconds=5)) - servertime).total_seconds()
+    #     await asyncio.sleep(couldown)
+    #     await interaction.send(content="<@&1097373637381726368>", embed=contractTimeoutEmbed, ephemeral=False)
+    # elif contract_name == "Долгожданная встреча (схемы)":
+    #     contractTimeoutEmbed = Embed(
+    #         title=f"Контракт откатился!",
+    #         description=f"{contract_name} взятый ранее {interaction.user.name} откатился!",
+    #         colour=nextcord.Colour.dark_blue()
+    #     )
+    #
+    #     couldown = ((servertime + datetime.timedelta(seconds=5)) - servertime).total_seconds()
+    #     await asyncio.sleep(couldown)
+    #     await interaction.send(content="<@&1097373637381726368>", embed=contractTimeoutEmbed, ephemeral=False)
+    # elif contract_name == "Ломать - не строить":
+    #     contractTimeoutEmbed = Embed(
+    #         title=f"Контракт откатился!",
+    #         description=f"{contract_name} взятый ранее {interaction.user.name} откатился!",
+    #         colour=nextcord.Colour.dark_blue()
+    #     )
+    #
+    #     couldown = ((servertime + datetime.timedelta(seconds=5)) - servertime).total_seconds()
+    #     await asyncio.sleep(couldown)
+    #     await interaction.send(content="<@&1097373637381726368>", embed=contractTimeoutEmbed, ephemeral=False)
+    # else:
+    #     await interaction.send("Не попал в if")
 
 # шутка
 @bot.slash_command(guild_ids=[guild_lannisters], description="[2-level] Получение рандомной шутки")
@@ -143,7 +152,7 @@ async def шутка(interaction: Interaction):
         await bot.get_channel(interaction.channel_id).send(translator.translate(str(jokeJson["joke"])))
     else:
         await bot.get_channel(interaction.channel_id).send(translator.translate(str(jokeJson["setup"])))
-        time.sleep(5)
+        time.sleep(2)
         await bot.get_channel(interaction.channel_id).send(translator.translate(str(jokeJson["delivery"])))
 
 
