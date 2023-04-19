@@ -1,18 +1,15 @@
-import time
-
 import asyncio
-import nextcord
 import datetime
 import json
-import requests
 import random
+import time
 
-
+import nextcord
+import requests
 from nextcord import *
-from nextcord.ui import Button, View
 from nextcord.ext import commands, application_checks
+from nextcord.ui import Button, View
 from translate import Translator
-
 
 import secret
 
@@ -22,12 +19,13 @@ servertime = datetime.datetime.utcnow() + datetime.timedelta(hours=3)
 
 names = ["Яриком", "Милой", "Толей", "Валдисом", "Сергеем"]
 
+
 random_name = random.choice(names)
 
 # Activity
 activity = nextcord.Activity(type=nextcord.ActivityType.watching, name=f"за {random_name}")
 
-bot = commands.Bot(intents=nextcord.Intents.all(), activity=activity)
+bot = commands.Bot(intents=nextcord.Intents.all(), activity=activity, command_prefix="!")
 
 # Добро пожаловать
 @bot.event
@@ -180,7 +178,6 @@ async def очистить(interaction: Interaction,
     await interaction.send(f"Пользователь <@{interaction.user.id}> удалил {amount} сообщений")
     time.sleep(2)
     await bot.get_channel(interaction.channel_id).purge(limit=1)
-
 
 
 bot.run(secret.key)
