@@ -3,14 +3,13 @@ import datetime
 import json
 import random
 import time
-
 import nextcord
 import requests
+
 from nextcord import *
 from nextcord.ext import commands, application_checks
 from nextcord.ui import Button, View
 from translate import Translator
-import texttoimage
 
 import secret
 
@@ -26,7 +25,6 @@ random_name = random.choice(names)
 activity = nextcord.Activity(type=nextcord.ActivityType.watching, name=f"за {random_name}")
 
 bot = commands.Bot(intents=nextcord.Intents.all(), activity=activity, command_prefix="!")
-
 
 # Добро пожаловать
 @bot.event
@@ -184,5 +182,10 @@ async def очистить(interaction: Interaction,
     time.sleep(2)
     await bot.get_channel(interaction.channel_id).purge(limit=1)
 
+
+# Music
+@bot.slash_command(guild_ids=[guild_lannisters], description="музыка")
+async def музыка(interaction: Interaction):
+    await interaction.send(f"Дорогой(ая) <@{interaction.user.id}>.\nЕбал я в рот эту музыку")
 
 bot.run(secret.key)
