@@ -3,13 +3,15 @@ import datetime
 import json
 import random
 import time
+
 import nextcord
 import requests
-
 from nextcord import *
+from nextcord import FFmpegPCMAudio, FFmpegOpusAudio
 from nextcord.ext import commands, application_checks
 from nextcord.ui import Button, View
 from translate import Translator
+import youtube_dl
 
 import secret
 
@@ -17,7 +19,7 @@ import secret
 guild_lannisters = 1097370199897939970
 servertime = datetime.datetime.utcnow() + datetime.timedelta(hours=3)
 
-names = ["Яриком", "Милой", "Толей", "Валдисом", "Сергеем"]
+names = ["Яриком", "Милой", "Толей", "Валдисом", "Сергеем", "Данилом"]
 
 random_name = random.choice(names)
 
@@ -25,6 +27,7 @@ random_name = random.choice(names)
 activity = nextcord.Activity(type=nextcord.ActivityType.watching, name=f"за {random_name}")
 
 bot = commands.Bot(intents=nextcord.Intents.all(), activity=activity, command_prefix="!")
+
 
 # Добро пожаловать
 @bot.event
@@ -179,13 +182,52 @@ async def очистить(interaction: Interaction,
                    amount: int = SlashOption(description="Сколько сообщений выше удалить?", required=True)):
     await bot.get_channel(interaction.channel_id).purge(limit=amount)
     await interaction.send(f"Пользователь <@{interaction.user.id}> удалил {amount} сообщений")
-    time.sleep(2)
+    time.sleep(1)
     await bot.get_channel(interaction.channel_id).purge(limit=1)
 
+# Музыка
+@bot.command()
+async def play(ctx):
+    voice_channel = ctx.author.voice.channel
+    voice_client = await voice_channel.connect()
+    source = await nextcord.FFmpegOpusAudio.from_probe('D:/tmp/Нервы - На Вынос (LIVE@ Авторадио).mp3')
+    voice_client.play(source)
+    await ctx.send("Мой владелец дебил, поэтому я умеею петь только эту песню.")
+    while voice_client.is_playing():
+        await asyncio.sleep(1)
+    await voice_client.disconnect()
 
-# Music
-@bot.slash_command(guild_ids=[guild_lannisters], description="музыка")
-async def музыка(interaction: Interaction):
-    await interaction.send(f"Дорогой(ая) <@{interaction.user.id}>.\nЕбал я в рот эту музыку")
+@bot.command()
+async def pause(ctx):
+    vc = ctx.voice_client
+    if vc.is_playing():
+        vc.pause()
+    else:
+        await ctx.send("Я ничего сейчас не играю.")
+
+@bot.command()
+async def resume(ctx):
+    vc = ctx.voice_client
+    if vc.is_paused():
+        vc.resume()
+    else:
+        await ctx.send("Я не на паузе.")
+
+@bot.command()
+async def stop(ctx):
+    vc = ctx.voice_client
+    if vc.is_playing():
+        vc.stop()
+    else:
+        await ctx.send("Я ничего не играю")
+
+@bot.command()
+async def leave(ctx):
+    voice_client = ctx.guild.voice_client
+    if voice_client.is_connected():
+        await voice_client.disconnect()
+    else:
+        await ctx.send("Я не нахожусь в голосовом канале!")
+
 
 bot.run(secret.key)
