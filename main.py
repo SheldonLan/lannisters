@@ -190,9 +190,10 @@ async def очистить(interaction: Interaction,
 async def play(ctx):
     voice_channel = ctx.author.voice.channel
     voice_client = await voice_channel.connect()
-    source = await nextcord.FFmpegOpusAudio.from_probe('D:/tmp/Нервы - На Вынос (LIVE@ Авторадио).mp3')
+    file = "Нервы - На Вынос (LIVE@ Авторадио).mp3"
+    source = await nextcord.FFmpegOpusAudio.from_probe(f'D:/tmp/{file}')
     voice_client.play(source)
-    await ctx.send("Мой владелец дебил, поэтому я умеею петь только эту песню.")
+    await ctx.send(f"Мой владелец дебил, поэтому я умеею петь только эту песню.\nСейчас играет {file}")
     while voice_client.is_playing():
         await asyncio.sleep(1)
     await voice_client.disconnect()
