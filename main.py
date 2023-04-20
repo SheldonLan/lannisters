@@ -1,17 +1,17 @@
 import asyncio
 import datetime
 import json
+import os
 import random
 import time
 
 import nextcord
 import requests
 from nextcord import *
-from nextcord import FFmpegPCMAudio, FFmpegOpusAudio
 from nextcord.ext import commands, application_checks
 from nextcord.ui import Button, View
 from translate import Translator
-import youtube_dl
+from pytube import YouTube
 
 import secret
 
@@ -93,9 +93,7 @@ async def контракт(
     await interaction.send(embed=contractStartEmbed, ephemeral=False, view=view)
 
     async def on_button_click(interaction: Interaction):
-        # Удаляем кнопку из представления
         view.clear_items()
-        # Обновляем сообщение с новым представлением без кнопки
         await interaction.message.edit(embed=contractEndedEmbed, view=view)
 
         if contract_name == "Большой улов (рыбка)":
@@ -187,15 +185,33 @@ async def очистить(interaction: Interaction,
 
 # Музыка
 @bot.command()
-async def play(ctx):
+async def play(ctx, url: str):
+    await ctx.send("<a:srt_discordloading:1098494332991963157> Подождите пару секунд, я загружаю песню. <a:srt_discordloading:1098494332991963157>")
+    yt = YouTube(url)
+    stream = yt.streams.filter(only_audio=True).first()
+    filename = stream.download(output_path='D:/tmp')
     voice_channel = ctx.author.voice.channel
     voice_client = await voice_channel.connect()
-    file = "Нервы - На Вынос (LIVE@ Авторадио).mp3"
-    source = await nextcord.FFmpegOpusAudio.from_probe(f'D:/tmp/{file}')
+    source = await nextcord.FFmpegOpusAudio.from_probe(f'{filename}')
     voice_client.play(source)
-    await ctx.send(f"Мой владелец дебил, поэтому я умеею петь только эту песню.\nСейчас играет {file}")
+    voicePlayEmbed = Embed(description=f"Cейчас играет: {str(filename).split('D:/tmp')[1].split('.mp')[0]}")
+    voicePlayEmbed.set_footer(text=f"Приятного прослушивания, {ctx.author}")
+    await ctx.send(embed=voicePlayEmbed)
     while voice_client.is_playing():
         await asyncio.sleep(1)
+    await voice_client.disconnect()
+    dir_path = "D:/tmp"
+    await asyncio.sleep(5)
+    files = os.listdir(dir_path)
+
+    for file in files:
+        if file.endswith(".mp4"):
+            file_path = os.path.join(dir_path, file)
+            try:
+                os.remove(file_path)
+                print(f"Файл {file_path} успешно удален")
+            except OSError as e:
+                print(f"Ошибка при удалении файла {file_path}: {e}")
     await voice_client.disconnect()
 
 @bot.command()
@@ -219,6 +235,19 @@ async def stop(ctx):
     vc = ctx.voice_client
     if vc.is_playing():
         vc.stop()
+        dir_path = "D:/tmp"
+        await asyncio.sleep(5)
+        files = os.listdir(dir_path)
+
+        for file in files:
+            if file.endswith(".mp4"):
+                file_path = os.path.join(dir_path, file)
+                try:
+                    os.remove(file_path)
+                    print(f"Файл {file_path} успешно удален")
+                except OSError as e:
+                    print(f"Ошибка при удалении файла {file_path}: {e}")
+        await voice_client.disconnect()
     else:
         await ctx.send("Я ничего не играю")
 
@@ -226,6 +255,19 @@ async def stop(ctx):
 async def leave(ctx):
     voice_client = ctx.guild.voice_client
     if voice_client.is_connected():
+        await voice_client.disconnect()
+        dir_path = "D:/tmp"
+        await asyncio.sleep(5)
+        files = os.listdir(dir_path)
+
+        for file in files:
+            if file.endswith(".mp4"):
+                file_path = os.path.join(dir_path, file)
+                try:
+                    os.remove(file_path)
+                    print(f"Файл {file_path} успешно удален")
+                except OSError as e:
+                    print(f"Ошибка при удалении файла {file_path}: {e}")
         await voice_client.disconnect()
     else:
         await ctx.send("Я не нахожусь в голосовом канале!")
