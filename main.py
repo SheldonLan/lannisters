@@ -4,6 +4,7 @@ import json
 import os
 import random
 import shutil
+import sys
 import time
 
 import nextcord
@@ -201,23 +202,43 @@ async def play(ctx, url: str):
         voicePlayEmbed.set_footer(text=f"Приятного прослушивания, {ctx.author}")
         await ctx.send(embed=voicePlayEmbed)
         while voice_client.is_playing():
-            await asyncio.sleep(1)
+            await asyncio.sleep(2)
         await voice_client.disconnect()
     else:
-        await ctx.send("<a:srt_discordloading:1098494332991963157> Подождите пару секунд, я загружаю песню. <a:srt_discordloading:1098494332991963157>")
-        yt = YouTube(url)
-        stream = yt.streams.filter(only_audio=True).first()
-        filename = stream.download(output_path='D:/tmp')
-        voice_channel = ctx.author.voice.channel
-        voice_client = await voice_channel.connect()
-        source = await nextcord.FFmpegOpusAudio.from_probe(f'D:/tmp/{filename}')
-        voice_client.play(source)
-        voicePlayEmbed = Embed(description=f"Cейчас играет: {filename}")
-        voicePlayEmbed.set_footer(text=f"Приятного прослушивания, {ctx.author}")
-        await ctx.send(embed=voicePlayEmbed)
-        while voice_client.is_playing():
-            await asyncio.sleep(1)
-        await voice_client.disconnect()
+        try:
+            await ctx.send("<a:srt_discordloading:1098494332991963157> Подождите пару секунд, я загружаю песню. <a:srt_discordloading:1098494332991963157>")
+            yt = YouTube(url)
+            stream = yt.streams.filter(only_audio=True).first()
+            filename = stream.download(output_path='D:/tmp')
+            voice_channel = ctx.author.voice.channel
+            voice_client = await voice_channel.connect()
+            source = await nextcord.FFmpegOpusAudio.from_probe(f'{filename}')
+            voice_client.play(source)
+            voicePlayEmbed = Embed(description=f"Cейчас играет: {filename.replace('D:/tmp','').replace('.mp4','')}")
+            voicePlayEmbed.set_footer(text=f"Приятного прослушивания, {ctx.author}")
+            await ctx.send(embed=voicePlayEmbed)
+            while voice_client.is_playing():
+                await asyncio.sleep(2)
+            await voice_client.disconnect()
+        except KeyError:
+            try:
+                await ctx.send(":sunglasses: Не получилось загрузить песню, попробую по другому. :sunglasses:")
+                yt = YouTube('https://youtu.be/'+url.split('watch?v=')[1].split('&')[0])
+                stream = yt.streams.filter(only_audio=True).first()
+                filename = stream.download(output_path='D:/tmp')
+                voice_channel = ctx.author.voice.channel
+                voice_client = await voice_channel.connect()
+                source = await nextcord.FFmpegOpusAudio.from_probe(f'{filename}')
+                voice_client.play(source)
+                voicePlayEmbed = Embed(description=f"Cейчас играет: {filename.replace('D:/tmp', '').replace('.mp4', '')}")
+                voicePlayEmbed.set_footer(text=f"Приятного прослушивания, {ctx.author}")
+                await ctx.send(embed=voicePlayEmbed)
+                while voice_client.is_playing():
+                    await asyncio.sleep(2)
+                await voice_client.disconnect()
+            except KeyError:
+                await ctx.send("Вообще не могу получить доступ :c")
+
 
 @bot.command()
 async def pause(ctx):
@@ -250,6 +271,11 @@ async def leave(ctx):
         await voice_client.disconnect()
     else:
         await ctx.send("Я не нахожусь в голосовом канале!")
+
+@bot.command()
+async def restart(ctx):
+    await ctx.send('Перезапускаюсь...')
+    os.execl(sys.executable, sys.executable, "C:/Users/RTA-Telecom/Desktop/test files/lannisters/main.py")
 
 @bot.slash_command(name="to-do")
 async def todo(interaction: Interaction):
