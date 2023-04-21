@@ -3,7 +3,7 @@ import datetime
 import json
 import os
 import random
-import shutil
+import subprocess
 import sys
 import time
 
@@ -243,43 +243,53 @@ async def play(ctx, url: str):
 @bot.command()
 async def pause(ctx):
     vc = ctx.voice_client
-    if vc.is_playing():
-        vc.pause()
-    else:
+    try:
+        if vc.is_playing():
+            vc.pause()
+    except AttributeError:
         await ctx.send("Я ничего сейчас не играю.")
 
 @bot.command()
 async def resume(ctx):
     vc = ctx.voice_client
-    if vc.is_paused():
-        vc.resume()
-    else:
+    try:
+        if vc.is_paused():
+            vc.resume()
+    except AttributeError:
         await ctx.send("Я не на паузе.")
 
 @bot.command()
 async def stop(ctx):
     vc = ctx.voice_client
-    if vc.is_playing():
-        vc.stop()
-    else:
+    try:
+        if vc.is_playing():
+            vc.stop()
+    except AttributeError:
         await ctx.send("Я ничего не играю")
 
 @bot.command()
 async def leave(ctx):
     voice_client = ctx.guild.voice_client
-    if voice_client.is_connected():
-        await voice_client.disconnect()
-    else:
+    try:
+        if voice_client.is_connected():
+            await voice_client.disconnect()
+    except AttributeError:
         await ctx.send("Я не нахожусь в голосовом канале!")
 
 @bot.command()
 async def restart(ctx):
     await ctx.send('Перезапускаюсь...')
+    subprocess.run(['bat.bat'])
     os.execl(sys.executable, sys.executable, "C:/Users/RTA-Telecom/Desktop/test files/lannisters/main.py")
+
 
 @bot.slash_command(name="to-do")
 async def todo(interaction: Interaction):
     await interaction.send("1. Оптимизация работы музыкальной библиотеки с помощью response - title - os.direxists\n"
                            "2. Создание плейлистов\n"
                            "3. Создание плеера через Embed и кнопки")
+
+
+
+
 bot.run(secret.key)
