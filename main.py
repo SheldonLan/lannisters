@@ -243,11 +243,6 @@ async def play(ctx, url: str):
 
 
 @bot.command()
-async def add(ctx):
-    await ctx.send("test")
-
-
-@bot.command()
 async def pause(ctx):
     vc = ctx.voice_client
     try:
@@ -301,7 +296,7 @@ async def todo(interaction: Interaction):
 
 
 # NEW MUSIC PLAYER
-@bot.slash_command(guild_ids=[guild_lannisters], description="testoviy add")
+@bot.slash_command(guild_ids=[guild_lannisters], description="Добавление песни по URL")
 async def add(interaction: Interaction,
               url: str = SlashOption(description="Ссылка на youtube", required=True)):
     # Отправка запроса по URL для получения названия файла
@@ -312,9 +307,10 @@ async def add(interaction: Interaction,
     if os.path.isfile(f'D:/tmp/{filename}.mp4'):
         with open("queue.txt", 'a', encoding="utf-8") as queue:
             queue.write(f"{filename.replace('D:/tmp', '')}\n")
-        await interaction.send(f"Файл {filename} был добавлен в очередь воспроизведения!")
+            addEmbed = Embed(description=f"Файл {filename} был добавлен в очередь воспроизведения!",  colour=nextcord.Colour.red())
+        await interaction.send(embed=addEmbed, ephemeral=True)
     else:
-        await interaction.send("Скачиваю файл.")
+        await interaction.send("Скачиваю файл.", ephemeral=True)
         try:
         # Скачиваем по url трек
             yt = YouTube(url)
@@ -322,8 +318,8 @@ async def add(interaction: Interaction,
             filename = stream.download(output_path='D:/tmp')
             with open("queue.txt", 'a', encoding="utf-8") as queue:
                 queue.write(f"{filename.replace('D:/tmp', '')[1:].replace('.mp4', '')}\n")
-
-            await interaction.edit_original_message(content=f"Файл {filename.replace('D:/tmp', '')[1:].replace('.mp4', '')} был добавлен в очередь воспроизведения!")
+                downloadAddEmbed = Embed(description=f"Файл {filename.replace('D:/tmp', '')[1:].replace('.mp4', '')} был добавлен в очередь воспроизведения!",  colour=nextcord.Colour.red())
+            await interaction.edit_original_message(content="", embed=downloadAddEmbed)
         except KeyError:
             await interaction.edit_original_message(content=f"Не удалось загрузить {filename}. Попробуйте !restart и добавить трек снова.")
 
@@ -332,7 +328,8 @@ async def add(interaction: Interaction,
 async def clearqueue(interaction: Interaction):
     with open("queue.txt", 'w', encoding='utf-8') as file:
         file.write('')
-    await interaction.send("Очередь была очищена")
+    clearEmbed = Embed(description=f"Очередь была очищена {interaction.user.name}",  colour=nextcord.Colour.random())
+    await interaction.send(embed=clearEmbed)
 
 
 @bot.slash_command(guild_ids=[guild_lannisters], description="show queue")
@@ -353,6 +350,7 @@ async def play(interaction: Interaction, channel: VoiceChannel):
     voice_client = await channel.connect()
     with open('queue.txt', 'r', encoding="utf-8") as queue:
         queueList = queue.read().strip().split('\n')
+        await interaction.send("Запускаюсь!")
     if len(queueList) == 0:
         await interaction.send("Очередь пуста")
     else:
@@ -361,7 +359,7 @@ async def play(interaction: Interaction, channel: VoiceChannel):
             voice_client.play(source)
             voicePlayEmbed = Embed(description=f"Cейчас играет: {element}", colour=nextcord.Colour.random())
             voicePlayEmbed.set_footer(text=f"Приятного прослушивания, {interaction.user.name}")
-            await interaction.send(embed=voicePlayEmbed)
+            await interaction.edit_original_message(content="", embed=voicePlayEmbed)
             while voice_client.is_playing():
                 await asyncio.sleep(1)
         await voice_client.disconnect()
