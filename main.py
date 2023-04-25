@@ -13,22 +13,22 @@ from bs4 import BeautifulSoup
 from nextcord import *
 from nextcord.ext import commands, application_checks
 from nextcord.ui import Button, View
-from translate import Translator
 from pytube import YouTube
+from translate import Translator
 
+import choice
 import secret
 
 # consts
-guild_lannisters = 1097370199897939970
-servertime = datetime.datetime.utcnow() + datetime.timedelta(hours=3)
-
-names = ["Яриком", "Милой", "Толей", "Валдисом", "Сергеем", "Данилом"]
-
-random_name = random.choice(names)
+guild_lannisters = 1097370199897939970  # id дискорд сервера
+servertime = datetime.datetime.utcnow() + datetime.timedelta(hours=3)  # получение мск времени
 
 # Activity
+names = ["Яриком", "Милой", "Толей", "Валдисом", "Сергеем", "Данилом", "Иваном"]
+random_name = random.choice(names)
 activity = nextcord.Activity(type=nextcord.ActivityType.watching, name=f"за {random_name}")
 
+# Bot definition
 bot = commands.Bot(intents=nextcord.Intents.all(), activity=activity, command_prefix="!")
 
 
@@ -62,12 +62,7 @@ async def правила(interaction: Interaction):
                             "Без этой роли. у Вас не получится отправить команду (она не будет обработана).")
 
 
-choices = {"Большой улов": "Большой улов (рыбка)",
-           "Грандиозная уборка": "Грандиозная уборка (мусор)",
-           "Мясной день": "Мясной день (мясо)",
-           "Долгожданная встреча": "Долгожданная встреча (схемы)",
-           "Ломать - не строить": "Ломать - не строить",
-           }
+choices = choice.contract_choices
 
 
 # Контракт
@@ -168,7 +163,7 @@ async def шутка(interaction: Interaction):
     response = requests.get('https://v2.jokeapi.dev/joke/Any')
     jokeJson = json.loads(response.text)
     translator = Translator(from_lang='en', to_lang='ru')
-    if (jokeJson["type"] == 'single'):
+    if jokeJson["type"] == 'single':
         await bot.get_channel(interaction.channel_id).send(translator.translate(str(jokeJson["joke"])))
     else:
         await bot.get_channel(interaction.channel_id).send(translator.translate(str(jokeJson["setup"])))
@@ -186,6 +181,7 @@ async def очистить(interaction: Interaction,
     time.sleep(1)
     await bot.get_channel(interaction.channel_id).purge(limit=1)
 
+
 # Музыка
 @bot.command()
 async def play(ctx, url: str):
@@ -198,7 +194,7 @@ async def play(ctx, url: str):
         voice_client = await voice_channel.connect()
         source = await nextcord.FFmpegOpusAudio.from_probe(f'D:/tmp/{filename}.mp4')
         voice_client.play(source)
-        voicePlayEmbed = Embed(description=f"Cейчас играет: {filename}")
+        voicePlayEmbed = Embed(description=f"Cейчас играет: {filename}", colour=nextcord.Colour.random())
         voicePlayEmbed.set_footer(text=f"Приятного прослушивания, {ctx.author}")
         await ctx.send(embed=voicePlayEmbed)
         while voice_client.is_playing():
@@ -206,7 +202,8 @@ async def play(ctx, url: str):
         await voice_client.disconnect()
     else:
         try:
-            await ctx.send("<a:srt_discordloading:1098494332991963157> Подождите пару секунд, я загружаю песню. <a:srt_discordloading:1098494332991963157>")
+            await ctx.send(
+                "<a:musica53:1098869634880503908> Подождите пару секунд, я загружаю песню. <a:musica53:1098869634880503908>")
             yt = YouTube(url)
             stream = yt.streams.filter(only_audio=True).first()
             filename = stream.download(output_path='D:/tmp')
@@ -214,7 +211,8 @@ async def play(ctx, url: str):
             voice_client = await voice_channel.connect()
             source = await nextcord.FFmpegOpusAudio.from_probe(f'{filename}')
             voice_client.play(source)
-            voicePlayEmbed = Embed(description=f"Cейчас играет: {filename.replace('D:/tmp','').replace('.mp4','')}")
+            voicePlayEmbed = Embed(description=f"Cейчас играет: {filename.replace('D:/tmp', '').replace('.mp4', '')}",
+                                   colour=nextcord.Colour.random())
             voicePlayEmbed.set_footer(text=f"Приятного прослушивания, {ctx.author}")
             await ctx.send(embed=voicePlayEmbed)
             while voice_client.is_playing():
@@ -222,22 +220,31 @@ async def play(ctx, url: str):
             await voice_client.disconnect()
         except KeyError:
             try:
-                await ctx.send(":sunglasses: Не получилось загрузить песню, попробую по другому. :sunglasses:")
-                yt = YouTube('https://youtu.be/'+url.split('watch?v=')[1].split('&')[0])
+                await ctx.send(
+                    "<a:srt_discordloading:1098494332991963157> Не получилось загрузить песню, попробую по другому. <a:srt_discordloading:1098494332991963157>")
+                yt = YouTube('https://youtu.be/' + url.split('watch?v=')[1].split('&')[0])
                 stream = yt.streams.filter(only_audio=True).first()
                 filename = stream.download(output_path='D:/tmp')
                 voice_channel = ctx.author.voice.channel
                 voice_client = await voice_channel.connect()
                 source = await nextcord.FFmpegOpusAudio.from_probe(f'{filename}')
                 voice_client.play(source)
-                voicePlayEmbed = Embed(description=f"Cейчас играет: {filename.replace('D:/tmp', '').replace('.mp4', '')}")
+                voicePlayEmbed = Embed(
+                    description=f"Cейчас играет: {filename.replace('D:/tmp', '').replace('.mp4', '')}",
+                    colour=nextcord.Colour.random())
                 voicePlayEmbed.set_footer(text=f"Приятного прослушивания, {ctx.author}")
                 await ctx.send(embed=voicePlayEmbed)
                 while voice_client.is_playing():
                     await asyncio.sleep(2)
                 await voice_client.disconnect()
             except KeyError:
-                await ctx.send("Вообще не могу получить доступ :c")
+                await ctx.send(
+                    "<a:ghost64:1098869622645735565> Вообще не могу получить доступ :c\nВоспользуйтесь командой !restart, а после повторите попытку. <a:ghost64:1098869622645735565>")
+
+
+@bot.command()
+async def add(ctx):
+    await ctx.send("test")
 
 
 @bot.command()
@@ -249,6 +256,7 @@ async def pause(ctx):
     except AttributeError:
         await ctx.send("Я ничего сейчас не играю.")
 
+
 @bot.command()
 async def resume(ctx):
     vc = ctx.voice_client
@@ -257,6 +265,7 @@ async def resume(ctx):
             vc.resume()
     except AttributeError:
         await ctx.send("Я не на паузе.")
+
 
 @bot.command()
 async def stop(ctx):
@@ -267,6 +276,7 @@ async def stop(ctx):
     except AttributeError:
         await ctx.send("Я ничего не играю")
 
+
 @bot.command()
 async def leave(ctx):
     voice_client = ctx.guild.voice_client
@@ -275,6 +285,7 @@ async def leave(ctx):
             await voice_client.disconnect()
     except AttributeError:
         await ctx.send("Я не нахожусь в голосовом канале!")
+
 
 @bot.command()
 async def restart(ctx):
@@ -285,11 +296,74 @@ async def restart(ctx):
 
 @bot.slash_command(name="to-do")
 async def todo(interaction: Interaction):
-    await interaction.send("1. Оптимизация работы музыкальной библиотеки с помощью response - title - os.direxists\n"
-                           "2. Создание плейлистов\n"
-                           "3. Создание плеера через Embed и кнопки")
+    await interaction.send("1. Дни рождения участников set/remove/remember\n"
+                           "2. ")
 
 
+# NEW MUSIC PLAYER
+@bot.slash_command(guild_ids=[guild_lannisters], description="testoviy add")
+async def add(interaction: Interaction,
+              url: str = SlashOption(description="Ссылка на youtube", required=True)):
+    # Отправка запроса по URL для получения названия файла
+    re = requests.get(url).text
+    soup = BeautifulSoup(re, "html.parser")
+    filename = soup.find('title').text.replace(" - YouTube", "")
+    # Проверка на существование файла
+    if os.path.isfile(f'D:/tmp/{filename}.mp4'):
+        with open("queue.txt", 'a', encoding="utf-8") as queue:
+            queue.write(f"{filename.replace('D:/tmp', '')}\n")
+        await interaction.send(f"Файл {filename} был добавлен в очередь воспроизведения!")
+    else:
+        await interaction.send("Скачиваю файл.")
+        try:
+        # Скачиваем по url трек
+            yt = YouTube(url)
+            stream = yt.streams.filter(only_audio=True).first()
+            filename = stream.download(output_path='D:/tmp')
+            with open("queue.txt", 'a', encoding="utf-8") as queue:
+                queue.write(f"{filename.replace('D:/tmp', '')[1:].replace('.mp4', '')}\n")
 
+            await interaction.edit_original_message(content=f"Файл {filename.replace('D:/tmp', '')[1:].replace('.mp4', '')} был добавлен в очередь воспроизведения!")
+        except KeyError:
+            await interaction.edit_original_message(content=f"Не удалось загрузить {filename}. Попробуйте !restart и добавить трек снова.")
+
+
+@bot.slash_command(guild_ids=[guild_lannisters], description="Удаление списка песен")
+async def clearqueue(interaction: Interaction):
+    with open("queue.txt", 'w', encoding='utf-8') as file:
+        file.write('')
+    await interaction.send("Очередь была очищена")
+
+
+@bot.slash_command(guild_ids=[guild_lannisters], description="show queue")
+async def showqueue(interaction: Interaction):
+    with open('queue.txt', 'r', encoding="utf-8") as queue:
+        lines = queue.read().split('\n')
+        message = "\n".join(lines)
+        queueEmbed = Embed(title="Очередь воспроизведения:", description=f"{message}", colour=nextcord.Colour.random())
+        await interaction.send(embed=queueEmbed)
+
+@bot.slash_command(guild_ids=[guild_lannisters], description="black")
+async def психолог(interaction: Interaction):
+    await interaction.send("Лучше бы повесился")
+
+
+@bot.slash_command(guild_ids=[guild_lannisters], description="play test")
+async def play(interaction: Interaction, channel: VoiceChannel):
+    voice_client = await channel.connect()
+    with open('queue.txt', 'r', encoding="utf-8") as queue:
+        queueList = queue.read().strip().split('\n')
+    if len(queueList) == 0:
+        await interaction.send("Очередь пуста")
+    else:
+        for element in queueList:
+            source = await nextcord.FFmpegOpusAudio.from_probe(f'D:/tmp/{element}.mp4')
+            voice_client.play(source)
+            voicePlayEmbed = Embed(description=f"Cейчас играет: {element}", colour=nextcord.Colour.random())
+            voicePlayEmbed.set_footer(text=f"Приятного прослушивания, {interaction.user.name}")
+            await interaction.send(embed=voicePlayEmbed)
+            while voice_client.is_playing():
+                await asyncio.sleep(1)
+        await voice_client.disconnect()
 
 bot.run(secret.key)
