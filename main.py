@@ -11,7 +11,7 @@ import nextcord
 import requests
 from bs4 import BeautifulSoup
 from nextcord import *
-from nextcord.ext import commands, application_checks
+from nextcord.ext import commands, application_checks, tasks
 from nextcord.ui import Button, View
 from pytube import YouTube
 from translate import Translator
@@ -48,7 +48,6 @@ async def on_member_join(member: Member):
 
 # Правила
 @bot.slash_command(guild_ids=[guild_lannisters], description="[1-level] Правила")
-@application_checks.has_any_role('1-level')
 async def правила(interaction: Interaction):
     channelRules = bot.get_channel(1097373322947342366)
     await channelRules.send("**Привет всем!** 😱\nЯ Ваш персональный помощник по всем вопросам.\n\n"
@@ -65,9 +64,18 @@ async def правила(interaction: Interaction):
 choices = choice.contract_choices
 
 
-# Контракт
+"""
+/контракты НАЗВАНИЕ_КОНТРАКТА
+
+Вывод Embed'ki и кнопки,
+после выполнения команды у Вас появится информационное Embed сообщение с названием и временем взятия,
+а также кнопка Контракт выполнен,
+по нажатию на кнопку, происходит отчёт времени кд контракта,
+как только КД будет подходить к концу,
+бот тегнет роль @Контракты и оповестит о завершение КД у НАЗВАНИЕ_КОНТРАКТА,
+тем самым не придётся постоянно чекать, когда пройдёт КД.
+"""
 @bot.slash_command(guild_ids=[guild_lannisters], description="[Контракты] Взятие контракта")
-@application_checks.has_any_role('Контракты')
 async def контракт(
         interaction: Interaction,
         contract_name: str = SlashOption(description="Какой контракт Вы взяли?",
@@ -156,9 +164,11 @@ async def контракт(
     accept_button.callback = on_button_click
 
 
-# шутка
+"""
+Генерация рандомной шутки через jokeapi
+Получение Json, парсинг его, отправка одним/двумя сообщениями в зависимости от типа сообщения.
+"""
 @bot.slash_command(guild_ids=[guild_lannisters], description="[2-level] Получение рандомной шутки")
-@application_checks.has_any_role('2-level', '3-level', '1-level', 'DSM')
 async def шутка(interaction: Interaction):
     response = requests.get('https://v2.jokeapi.dev/joke/Any')
     jokeJson = json.loads(response.text)
@@ -171,7 +181,11 @@ async def шутка(interaction: Interaction):
         await bot.get_channel(interaction.channel_id).send(translator.translate(str(jokeJson["delivery"])))
 
 
-# Purge
+"""
+Слеш-команда /Очистить + "int: amount(кол-во)",
+Выполняет функцию удаления сообщений канала,
+где эта команда была вызвана.
+"""
 @bot.slash_command(guild_ids=[guild_lannisters], description="[1-level] Удаление предыдущих сообщений")
 @application_checks.has_any_role('1-level')
 async def очистить(interaction: Interaction,
@@ -182,7 +196,14 @@ async def очистить(interaction: Interaction,
     await bot.get_channel(interaction.channel_id).purge(limit=1)
 
 
-# Музыка
+"""
+Обычные команды для работы с музыкой:
+!play url - для воспроизведения одного трека
+!stop - для остановки воспроизведения (можно использовать как /skip)
+!pause - для паузы
+!resume - для продолжения
+!leave - покинуть голосовой канал  
+"""
 @bot.command()
 async def play(ctx, url: str):
     re = requests.get(url).text
@@ -289,13 +310,23 @@ async def restart(ctx):
     os.execl(sys.executable, sys.executable, "C:/Users/RTA-Telecom/Desktop/test files/lannisters/main.py")
 
 
+"""to-do"""
 @bot.slash_command(name="to-do")
 async def todo(interaction: Interaction):
     await interaction.send("1. Дни рождения участников set/remove/remember\n"
                            "2. ")
 
 
-# NEW MUSIC PLAYER
+"""
+
+Новый самописный музыкальный плеер
+Команды:
+/play voice_channel- Воспроизведение очереди треков в голосовом канале
+/add url- добавление  трека в очередь, по url идёт проверка, существует ли файл, если нет, то скачивается и добавляет в очередь
+/showqueue - вывод Embed сообщения с очередью треков
+/clearqueue - очистка очереди
+
+"""
 @bot.slash_command(guild_ids=[guild_lannisters], description="Добавление песни по URL")
 async def add(interaction: Interaction,
               url: str = SlashOption(description="Ссылка на youtube", required=True)):
@@ -307,28 +338,32 @@ async def add(interaction: Interaction,
     if os.path.isfile(f'D:/tmp/{filename}.mp4'):
         with open("queue.txt", 'a', encoding="utf-8") as queue:
             queue.write(f"{filename.replace('D:/tmp', '')}\n")
-            addEmbed = Embed(description=f"Файл {filename} был добавлен в очередь воспроизведения!",  colour=nextcord.Colour.red())
+            addEmbed = Embed(description=f"Файл {filename} был добавлен в очередь воспроизведения!",
+                             colour=nextcord.Colour.red())
         await interaction.send(embed=addEmbed, ephemeral=True)
     else:
         await interaction.send("Скачиваю файл.", ephemeral=True)
         try:
-        # Скачиваем по url трек
+            # Скачиваем по url трек
             yt = YouTube(url)
             stream = yt.streams.filter(only_audio=True).first()
             filename = stream.download(output_path='D:/tmp')
             with open("queue.txt", 'a', encoding="utf-8") as queue:
                 queue.write(f"{filename.replace('D:/tmp', '')[1:].replace('.mp4', '')}\n")
-                downloadAddEmbed = Embed(description=f"Файл {filename.replace('D:/tmp', '')[1:].replace('.mp4', '')} был добавлен в очередь воспроизведения!",  colour=nextcord.Colour.red())
+                downloadAddEmbed = Embed(
+                    description=f"Файл {filename.replace('D:/tmp', '')[1:].replace('.mp4', '')} был добавлен в очередь воспроизведения!",
+                    colour=nextcord.Colour.red())
             await interaction.edit_original_message(content="", embed=downloadAddEmbed)
         except KeyError:
-            await interaction.edit_original_message(content=f"Не удалось загрузить {filename}. Попробуйте !restart и добавить трек снова.")
+            await interaction.edit_original_message(
+                content=f"Не удалось загрузить {filename}. Попробуйте !restart и добавить трек снова.")
 
 
 @bot.slash_command(guild_ids=[guild_lannisters], description="Удаление списка песен")
 async def clearqueue(interaction: Interaction):
     with open("queue.txt", 'w', encoding='utf-8') as file:
         file.write('')
-    clearEmbed = Embed(description=f"Очередь была очищена {interaction.user.name}",  colour=nextcord.Colour.random())
+    clearEmbed = Embed(description=f"Очередь была очищена {interaction.user.name}", colour=nextcord.Colour.random())
     await interaction.send(embed=clearEmbed)
 
 
@@ -340,20 +375,16 @@ async def showqueue(interaction: Interaction):
         queueEmbed = Embed(title="Очередь воспроизведения:", description=f"{message}", colour=nextcord.Colour.random())
         await interaction.send(embed=queueEmbed)
 
-@bot.slash_command(guild_ids=[guild_lannisters], description="black")
-async def психолог(interaction: Interaction):
-    await interaction.send("Лучше бы повесился")
-
 
 @bot.slash_command(guild_ids=[guild_lannisters], description="play test")
 async def play(interaction: Interaction, channel: VoiceChannel):
     voice_client = await channel.connect()
     with open('queue.txt', 'r', encoding="utf-8") as queue:
         queueList = queue.read().strip().split('\n')
-        await interaction.send("Запускаюсь!")
     if len(queueList) == 0:
         await interaction.send("Очередь пуста")
     else:
+        await interaction.send("Запускаюсь")
         for element in queueList:
             source = await nextcord.FFmpegOpusAudio.from_probe(f'D:/tmp/{element}.mp4')
             voice_client.play(source)
@@ -361,7 +392,74 @@ async def play(interaction: Interaction, channel: VoiceChannel):
             voicePlayEmbed.set_footer(text=f"Приятного прослушивания, {interaction.user.name}")
             await interaction.edit_original_message(content="", embed=voicePlayEmbed)
             while voice_client.is_playing():
-                await asyncio.sleep(1)
+                await asyncio.sleep(5)
         await voice_client.disconnect()
+
+
+@bot.slash_command(guild_ids=[guild_lannisters], description="set birthday")
+async def birthday(interacion: Interaction, user: nextcord.Member, bday_date: str):
+    bday = datetime.datetime.strptime(bday_date, '%d.%m').date()
+
+    def save_birthday(user_id, bday):
+        with open("birthdays.txt", "a") as f:
+            f.write(f"{user_id}:{bday}\n")
+
+    save_birthday(user.id, bday)
+
+    await interacion.send(f"День рождения {user.mention} сохранен: {bday_date}")
+
+"""
+ВЗП, отправка Embed сообщения
+По клику добавляет участников
+По клику убирает участников
+Просчитывает кол-во аммуниции
+"""
+@bot.slash_command(guild_ids=[guild_lannisters], description="Война за предприятие")
+async def взп(interaction: Interaction, time: str = SlashOption(description="Во сколько группаемся?",
+                                         required=True)):
+
+    edy_button = Button(label="Я еду!", style=ButtonStyle.green, custom_id="accept_button")
+    view = View()
+    view.add_item(edy_button)
+
+    vzpEmbed = Embed(title="Поехали на ВЗП?", description="Функция просчётов участников и аммуниции")
+    vzpEmbed.set_footer(text=f"Объявил сбор: {interaction.user.name}")
+    sborshik = interaction.user.name
+
+    with open('vzp.txt', 'w', encoding='utf-8') as vzptxt:
+        vzptxt.write(f"<@{interaction.user.id}>\n")
+
+    await interaction.send(content=f"<@&1100736955643351070> собираемся в {time}", embed=vzpEmbed, view=view)
+
+    async def on_edy_button_click(interaction: Interaction):
+        with open("vzp.txt", 'a', encoding="utf-8") as vpz_txt:
+            list_vzp_members = open('vzp.txt', 'r', encoding='utf-8').read().strip().split('\n')
+            if "<@" + str(interaction.user.id) + ">" in list_vzp_members:
+                list_vzp_members.remove(f'<@{interaction.user.id}>')
+                with open("vzp.txt", "w", encoding="utf-8") as f:
+                    f.write('\n'.join(list_vzp_members) + "\n")
+            else:
+                vpz_txt.write(f"<@{interaction.user.id}>\n")
+        vzp_members = open('vzp.txt', 'r', encoding='utf-8').read().strip().split("\n")
+        counter = 0
+        for el in vzp_members:
+            counter += 1
+        vzp_members_str = '\n'.join(vzp_members)
+
+        bullets = counter * 300
+        armor = counter * 2
+        gun = counter
+
+        vzp_edyEmbed = Embed(title="Поехали на ВЗП?")
+        vzp_edyEmbed.add_field(name="Кто едет:", value=f"{vzp_members_str}")
+        vzp_edyEmbed.add_field(name="   ", value="   ")
+        vzp_edyEmbed.add_field(name="Расчёты:", value=f"На {counter} человек нужно:\n"
+                                                f"Ганов: {gun}\n"
+                                                f"Патронов: {bullets}\n"
+                                                f"Броников: {armor}")
+        vzp_edyEmbed.set_footer(text=f"Объявил сбор: {sborshik}")
+        await interaction.message.edit(content=f"<@&1100736955643351070> собираемся в {time}", embed=vzp_edyEmbed, view=view)
+
+    edy_button.callback = on_edy_button_click
 
 bot.run(secret.key)
