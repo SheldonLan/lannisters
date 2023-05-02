@@ -63,7 +63,6 @@ async def правила(interaction: Interaction):
 
 choices = choice.contract_choices
 
-
 """
 /контракты НАЗВАНИЕ_КОНТРАКТА
 
@@ -75,6 +74,8 @@ choices = choice.contract_choices
 бот тегнет роль @Контракты и оповестит о завершение КД у НАЗВАНИЕ_КОНТРАКТА,
 тем самым не придётся постоянно чекать, когда пройдёт КД.
 """
+
+
 @bot.slash_command(guild_ids=[guild_lannisters], description="[Контракты] Взятие контракта")
 async def контракт(
         interaction: Interaction,
@@ -168,6 +169,8 @@ async def контракт(
 Генерация рандомной шутки через jokeapi
 Получение Json, парсинг его, отправка одним/двумя сообщениями в зависимости от типа сообщения.
 """
+
+
 @bot.slash_command(guild_ids=[guild_lannisters], description="[2-level] Получение рандомной шутки")
 async def шутка(interaction: Interaction):
     response = requests.get('https://v2.jokeapi.dev/joke/Any')
@@ -186,6 +189,8 @@ async def шутка(interaction: Interaction):
 Выполняет функцию удаления сообщений канала,
 где эта команда была вызвана.
 """
+
+
 @bot.slash_command(guild_ids=[guild_lannisters], description="[1-level] Удаление предыдущих сообщений")
 @application_checks.has_any_role('1-level')
 async def очистить(interaction: Interaction,
@@ -204,6 +209,8 @@ async def очистить(interaction: Interaction,
 !resume - для продолжения
 !leave - покинуть голосовой канал  
 """
+
+
 @bot.command()
 async def play(ctx, url: str):
     re = requests.get(url).text
@@ -226,7 +233,9 @@ async def play(ctx, url: str):
             await ctx.send(
                 "<a:musica53:1098869634880503908> Подождите пару секунд, я загружаю песню. <a:musica53:1098869634880503908>")
             yt = YouTube(url)
+            await asyncio.sleep(3)
             stream = yt.streams.filter(only_audio=True).first()
+            await asyncio.sleep(2)
             filename = stream.download(output_path='D:/tmp')
             voice_channel = ctx.author.voice.channel
             voice_client = await voice_channel.connect()
@@ -311,6 +320,8 @@ async def restart(ctx):
 
 
 """to-do"""
+
+
 @bot.slash_command(name="to-do")
 async def todo(interaction: Interaction):
     await interaction.send("1. Дни рождения участников set/remove/remember\n"
@@ -327,6 +338,8 @@ async def todo(interaction: Interaction):
 /clearqueue - очистка очереди
 
 """
+
+
 @bot.slash_command(guild_ids=[guild_lannisters], description="Добавление песни по URL")
 async def add(interaction: Interaction,
               url: str = SlashOption(description="Ссылка на youtube", required=True)):
@@ -396,18 +409,6 @@ async def play(interaction: Interaction, channel: VoiceChannel):
         await voice_client.disconnect()
 
 
-@bot.slash_command(guild_ids=[guild_lannisters], description="set birthday")
-async def birthday(interacion: Interaction, user: nextcord.Member, bday_date: str):
-    bday = datetime.datetime.strptime(bday_date, '%d.%m').date()
-
-    def save_birthday(user_id, bday):
-        with open("birthdays.txt", "a") as f:
-            f.write(f"{user_id}:{bday}\n")
-
-    save_birthday(user.id, bday)
-
-    await interacion.send(f"День рождения {user.mention} сохранен: {bday_date}")
-
 """
 ВЗП, отправка Embed сообщения
 По клику добавляет участников
@@ -416,8 +417,7 @@ async def birthday(interacion: Interaction, user: nextcord.Member, bday_date: st
 """
 @bot.slash_command(guild_ids=[guild_lannisters], description="Война за предприятие")
 async def взп(interaction: Interaction, time: str = SlashOption(description="Во сколько группаемся?",
-                                         required=True)):
-
+                                                                required=True)):
     edy_button = Button(label="Я еду!", style=ButtonStyle.green, custom_id="accept_button")
     view = View()
     view.add_item(edy_button)
@@ -429,7 +429,8 @@ async def взп(interaction: Interaction, time: str = SlashOption(description="
     with open('vzp.txt', 'w', encoding='utf-8') as vzptxt:
         vzptxt.write(f"<@{interaction.user.id}>\n")
 
-    await interaction.send(content=f"<@&1100736955643351070> собираемся в {time}", embed=vzpEmbed, view=view)
+    await interaction.send(f"{interaction.guild.get_role(1100736955643351070).mention} собираемся в {time}",
+                           embed=vzpEmbed, view=view)
 
     async def on_edy_button_click(interaction: Interaction):
         with open("vzp.txt", 'a', encoding="utf-8") as vpz_txt:
@@ -454,12 +455,13 @@ async def взп(interaction: Interaction, time: str = SlashOption(description="
         vzp_edyEmbed.add_field(name="Кто едет:", value=f"{vzp_members_str}")
         vzp_edyEmbed.add_field(name="   ", value="   ")
         vzp_edyEmbed.add_field(name="Расчёты:", value=f"На {counter} человек нужно:\n"
-                                                f"Ганов: {gun}\n"
-                                                f"Патронов: {bullets}\n"
-                                                f"Броников: {armor}")
+                                                      f"Ганов: {gun}\n"
+                                                      f"Патронов: {bullets}\n"
+                                                      f"Броников: {armor}")
         vzp_edyEmbed.set_footer(text=f"Объявил сбор: {sborshik}")
-        await interaction.message.edit(content=f"<@&1100736955643351070> собираемся в {time}", embed=vzp_edyEmbed, view=view)
+        await interaction.message.edit(embed=vzp_edyEmbed, view=view)
 
     edy_button.callback = on_edy_button_click
+
 
 bot.run(secret.key)
