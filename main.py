@@ -6,14 +6,15 @@ import random
 import subprocess
 import sys
 import time
+from functools import partial
 
 import nextcord
 import requests
 from bs4 import BeautifulSoup
 from nextcord import *
-from nextcord.ext import commands, application_checks, tasks
+from nextcord.ext import commands, application_checks
 from nextcord.ui import Button, View
-from pytube import YouTube
+from pytube import YouTube, Search
 from translate import Translator
 
 import choice
@@ -207,7 +208,7 @@ async def очистить(interaction: Interaction,
 !stop - для остановки воспроизведения (можно использовать как /skip)
 !pause - для паузы
 !resume - для продолжения
-!leave - покинуть голосовой канал  
+!leave - покинуть голосовой канал
 """
 
 
@@ -336,9 +337,57 @@ async def todo(interaction: Interaction):
 /add url- добавление  трека в очередь, по url идёт проверка, существует ли файл, если нет, то скачивается и добавляет в очередь
 /showqueue - вывод Embed сообщения с очередью треков
 /clearqueue - очистка очереди
-
+/search - поиск по тексту
 """
+@bot.slash_command(guild_ids=[guild_lannisters], description="Поиск видео по тексту")
+async def search(interaction: Interaction, text: str = SlashOption(description="Введите текст для поиска", required=True)):
+    channel = bot.get_channel(interaction.channel_id)
+    s = Search(text)
+    search_opions = []
+    title_option = []
 
+    for search_object in s.results[:5]:
+        video_id = str(search_object).split("videoId=")[1].replace(">", "")
+        video_url_by_search = f"https://www.youtube.com/watch?v={video_id}"
+        title_request = requests.get(video_url_by_search).text
+        soup = BeautifulSoup(title_request, "html.parser")
+        filename = soup.find('title').text.replace(" - YouTube", "")
+        search_opions.append(filename)
+    view = View()
+
+    options_urls = {}
+
+    for search_option in search_opions:
+        video_id = str(s.results[search_opions.index(search_option)]).split("videoId=")[1].replace(">", "")
+        video_url_by_search = f"https://www.youtube.com/watch?v={video_id}"
+        options_urls[search_option] = video_url_by_search
+
+    for element in search_opions:
+        select_option = SelectOption(label=element)
+        title_option.append(select_option)
+
+    async def handle_select(interaction: nextcord.Interaction, select_menu: nextcord.ui.Select):
+        selected_option = select_menu.values[0]
+        selected_url = options_urls[selected_option]
+        print(f"User: {interaction.user}\toption: {selected_option}\tURL: {selected_url}")
+        channel = bot.get_channel(interaction.channel_id)
+        await channel.send(f"{selected_url}")
+        # yt = YouTube(selected_url)
+        # stream = yt.streams.filter(only_audio=True).first()
+        # filename = stream.download(output_path='D:/tmp')
+        # with open("queue.txt", 'a', encoding="utf-8") as queue:
+        #     queue.write(f"{filename.replace('D:/tmp', '')[1:].replace('.mp4', '')}\n")
+        #     downloadAddEmbed = Embed(
+        #         description=f"Файл {filename.replace('D:/tmp', '')[1:].replace('.mp4', '')} был добавлен в очередь воспроизведения!",
+        #         colour=nextcord.Colour.red())
+        # await channel.send(embed=downloadAddEmbed)
+
+    options = [nextcord.SelectOption(label=option) for option in search_opions]
+    select_menu = nextcord.ui.Select(placeholder="Выберите песню", options=options)
+    select_menu.callback = partial(handle_select, select_menu=select_menu)
+
+    view.add_item(select_menu)
+    await channel.send(content=f"Результат поиска по {text}", view=view)
 
 @bot.slash_command(guild_ids=[guild_lannisters], description="Добавление песни по URL")
 async def add(interaction: Interaction,
@@ -356,21 +405,15 @@ async def add(interaction: Interaction,
         await interaction.send(embed=addEmbed, ephemeral=True)
     else:
         await interaction.send("Скачиваю файл.", ephemeral=True)
-        try:
-            # Скачиваем по url трек
-            yt = YouTube(url)
-            stream = yt.streams.filter(only_audio=True).first()
-            filename = stream.download(output_path='D:/tmp')
-            with open("queue.txt", 'a', encoding="utf-8") as queue:
-                queue.write(f"{filename.replace('D:/tmp', '')[1:].replace('.mp4', '')}\n")
-                downloadAddEmbed = Embed(
-                    description=f"Файл {filename.replace('D:/tmp', '')[1:].replace('.mp4', '')} был добавлен в очередь воспроизведения!",
-                    colour=nextcord.Colour.red())
-            await interaction.edit_original_message(content="", embed=downloadAddEmbed)
-        except KeyError:
-            await interaction.edit_original_message(
-                content=f"Не удалось загрузить {filename}. Попробуйте !restart и добавить трек снова.")
-
+        yt = YouTube(url)
+        stream = yt.streams.filter(only_audio=True).first()
+        filename = stream.download(output_path='D:/tmp')
+        with open("queue.txt", 'a', encoding="utf-8") as queue:
+            queue.write(f"{filename.replace('D:/tmp', '')[1:].replace('.mp4', '')}\n")
+            downloadAddEmbed = Embed(
+                description=f"Файл {filename.replace('D:/tmp', '')[1:].replace('.mp4', '')} был добавлен в очередь воспроизведения!",
+                colour=nextcord.Colour.red())
+        await interaction.edit_original_message(content="", embed=downloadAddEmbed)
 
 @bot.slash_command(guild_ids=[guild_lannisters], description="Удаление списка песен")
 async def clearqueue(interaction: Interaction):
@@ -415,6 +458,8 @@ async def play(interaction: Interaction, channel: VoiceChannel):
 По клику убирает участников
 Просчитывает кол-во аммуниции
 """
+
+
 @bot.slash_command(guild_ids=[guild_lannisters], description="Война за предприятие")
 async def взп(interaction: Interaction, time: str = SlashOption(description="Во сколько группаемся?",
                                                                 required=True)):
