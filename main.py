@@ -1,21 +1,22 @@
 import asyncio
 import datetime
 import json
-import os
-import random
 import subprocess
 import sys
 import time
 from functools import partial
 
+import urllib.request
+import os
 import nextcord
 import requests
 from bs4 import BeautifulSoup
 from nextcord import *
-from nextcord.ext import commands, application_checks
+from nextcord.ext import commands, application_checks, tasks
 from nextcord.ui import Button, View
 from pytube import YouTube, Search
 from translate import Translator
+from itertools import cycle
 
 import choice
 import secret
@@ -25,13 +26,20 @@ guild_lannisters = 1097370199897939970  # id дискорд сервера
 servertime = datetime.datetime.utcnow() + datetime.timedelta(hours=3)  # получение мск времени
 
 # Activity
-names = ["Яриком", "Милой", "Толей", "Валдисом", "Сергеем", "Данилом", "Иваном"]
-random_name = random.choice(names)
-activity = nextcord.Activity(type=nextcord.ActivityType.watching, name=f"за {random_name}")
+names = cycle(["за Яриком", "за Милой", "за Толей", "за Валдисом", "за Сергеем", "за Данилом", "за Иваном", "за Настей", "за Алисой", "за Олегом", "за Наташей", "за Антоном", "за Львом"])
+
 
 # Bot definition
-bot = commands.Bot(intents=nextcord.Intents.all(), activity=activity, command_prefix="!")
+bot = commands.Bot(intents=nextcord.Intents.all(), command_prefix="!")
 
+@tasks.loop(seconds=5)
+async def change_activity():
+    await bot.change_presence(activity=Activity(type=nextcord.ActivityType.watching, name=next(names)))
+
+@bot.event
+async def on_ready():
+    change_activity.start()
+    print('bot started')
 
 # Добро пожаловать
 @bot.event
@@ -98,7 +106,7 @@ async def контракт(
                                description=f"Контракт {contract_name} выполнен.\nПодтвердил действие {interaction.user.name}.")
     contractEndedEmbed.set_footer(text=f"Время выполнения: " + servertime.strftime('%d.%m.%Y %H:%M:%S'))
 
-    await interaction.send(embed=contractStartEmbed, ephemeral=False, view=view)
+    await interaction.send(content="<@&1111988562678779996>", embed=contractStartEmbed, ephemeral=False, view=view)
 
     async def on_button_click(interaction: Interaction):
         view.clear_items()
@@ -193,7 +201,6 @@ async def шутка(interaction: Interaction):
 
 
 @bot.slash_command(guild_ids=[guild_lannisters], description="[1-level] Удаление предыдущих сообщений")
-@application_checks.has_any_role('1-level')
 async def очистить(interaction: Interaction,
                    amount: int = SlashOption(description="Сколько сообщений выше удалить?", required=True)):
     await bot.get_channel(interaction.channel_id).purge(limit=amount)
@@ -341,53 +348,51 @@ async def todo(interaction: Interaction):
 """
 @bot.slash_command(guild_ids=[guild_lannisters], description="Поиск видео по тексту")
 async def search(interaction: Interaction, text: str = SlashOption(description="Введите текст для поиска", required=True)):
+
+    search_text = text
     channel = bot.get_channel(interaction.channel_id)
-    s = Search(text)
-    search_opions = []
-    title_option = []
+    save_dir = 'D:/tmp/'
 
-    for search_object in s.results[:5]:
-        video_id = str(search_object).split("videoId=")[1].replace(">", "")
-        video_url_by_search = f"https://www.youtube.com/watch?v={video_id}"
-        title_request = requests.get(video_url_by_search).text
-        soup = BeautifulSoup(title_request, "html.parser")
-        filename = soup.find('title').text.replace(" - YouTube", "")
-        search_opions.append(filename)
-    view = View()
+    html_page = requests.get(f"https://ru.hitmotop.com/search?q={search_text}").content
+    soup = BeautifulSoup(html_page, 'html.parser')
 
-    options_urls = {}
+    track_info = soup.find_all("li", {"class": "tracks__item"})[:5]
+    track_list = []
 
-    for search_option in search_opions:
-        video_id = str(s.results[search_opions.index(search_option)]).split("videoId=")[1].replace(">", "")
-        video_url_by_search = f"https://www.youtube.com/watch?v={video_id}"
-        options_urls[search_option] = video_url_by_search
+    for track in track_info:
+        track_parser = track.text.strip()
+        title = track_parser.split("\n")[0]
+        author = track_parser.split("\n")[2]
+        duration = track_parser.split("\n")[-1]
+        download_track = track.find("a", {"class": "track__download-btn"}).get('href')
+        track_list.append(author + "-" + title + " (" + duration + ") " + download_track)
+    await interaction.send(f"Поиск по {search_text} выполнен")
 
-    for element in search_opions:
-        select_option = SelectOption(label=element)
-        title_option.append(select_option)
+    track_option = []
+    for element in track_list:
+        element_author = element.split("-")[0]
+        element_title = element.split("-")[1].split(" (")[0]
+        element_duration = element.split(" (")[1].split(")")[0]
+        element_label = element_author + " - " + element_title + " (" + element_duration + ")"
+        element_value = element.split(")")[1].strip()
+        select_option = SelectOption(label=element_label, value=element_value, description=element_label)
+        track_option.append(select_option)
+
+    select_menu = nextcord.ui.Select(placeholder="Выберите песню", options=track_option)
 
     async def handle_select(interaction: nextcord.Interaction, select_menu: nextcord.ui.Select):
         selected_option = select_menu.values[0]
-        selected_url = options_urls[selected_option]
-        print(f"User: {interaction.user}\toption: {selected_option}\tURL: {selected_url}")
-        channel = bot.get_channel(interaction.channel_id)
-        await channel.send(f"{selected_url}")
-        # yt = YouTube(selected_url)
-        # stream = yt.streams.filter(only_audio=True).first()
-        # filename = stream.download(output_path='D:/tmp')
-        # with open("queue.txt", 'a', encoding="utf-8") as queue:
-        #     queue.write(f"{filename.replace('D:/tmp', '')[1:].replace('.mp4', '')}\n")
-        #     downloadAddEmbed = Embed(
-        #         description=f"Файл {filename.replace('D:/tmp', '')[1:].replace('.mp4', '')} был добавлен в очередь воспроизведения!",
-        #         colour=nextcord.Colour.red())
-        # await channel.send(embed=downloadAddEmbed)
+        filename = f"{selected_option.split('/')[-1]}"
+        urllib.request.urlretrieve(selected_option, os.path.join(save_dir, filename))
+        with open("queue.txt", 'a', encoding="utf-8") as queue:
+            queue.write(f"{filename}\n")
 
-    options = [nextcord.SelectOption(label=option) for option in search_opions]
-    select_menu = nextcord.ui.Select(placeholder="Выберите песню", options=options)
+
     select_menu.callback = partial(handle_select, select_menu=select_menu)
 
+    view = View()
     view.add_item(select_menu)
-    await channel.send(content=f"Результат поиска по {text}", view=view)
+    await interaction.edit_original_message(view=view)
 
 @bot.slash_command(guild_ids=[guild_lannisters], description="Добавление песни по URL")
 async def add(interaction: Interaction,
@@ -409,7 +414,7 @@ async def add(interaction: Interaction,
         stream = yt.streams.filter(only_audio=True).first()
         filename = stream.download(output_path='D:/tmp')
         with open("queue.txt", 'a', encoding="utf-8") as queue:
-            queue.write(f"{filename.replace('D:/tmp', '')[1:].replace('.mp4', '')}\n")
+            queue.write(f"{filename.replace('D:/tmp', '')[1:]}\n")
             downloadAddEmbed = Embed(
                 description=f"Файл {filename.replace('D:/tmp', '')[1:].replace('.mp4', '')} был добавлен в очередь воспроизведения!",
                 colour=nextcord.Colour.red())
@@ -442,9 +447,9 @@ async def play(interaction: Interaction, channel: VoiceChannel):
     else:
         await interaction.send("Запускаюсь")
         for element in queueList:
-            source = await nextcord.FFmpegOpusAudio.from_probe(f'D:/tmp/{element}.mp4')
+            source = await nextcord.FFmpegOpusAudio.from_probe(f'D:/tmp/{element}')
             voice_client.play(source)
-            voicePlayEmbed = Embed(description=f"Cейчас играет: {element}", colour=nextcord.Colour.random())
+            voicePlayEmbed = Embed(description=f"Cейчас играет: {element.replace('mp3', '')}", colour=nextcord.Colour.random())
             voicePlayEmbed.set_footer(text=f"Приятного прослушивания, {interaction.user.name}")
             await interaction.edit_original_message(content="", embed=voicePlayEmbed)
             while voice_client.is_playing():
